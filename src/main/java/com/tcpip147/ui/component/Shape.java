@@ -11,6 +11,7 @@ import java.awt.event.MouseEvent;
 public abstract class Shape {
 
     private boolean selected;
+    private boolean visible = true;
 
     public abstract void draw(Graphics2D g);
 

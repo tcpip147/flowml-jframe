@@ -1,24 +1,43 @@
 package com.tcpip147.ui;
 
 import com.tcpip147.ui.component.Shape;
-import com.tcpip147.ui.controller.MouseLeftDownController;
-import com.tcpip147.ui.model.ShapeModel;
+import com.tcpip147.ui.state.EventHandler;
+import com.tcpip147.ui.state.State;
+import com.tcpip147.ui.state.StateManager;
+import com.tcpip147.ui.state.impl.DragReady;
+import com.tcpip147.ui.state.impl.SelectReady;
 
 import javax.swing.*;
 import java.awt.*;
 
+
 public class Canvas extends JPanel {
 
-    private ActionManager actionManager = new ActionManager();
+    private StateManager stateManager = new StateManager();
     private ShapeModel model = new ShapeModel();
 
     public Canvas() {
         setLayout(null);
         setBackground(new Color(60, 63, 65));
 
-        model.getUpdateService().createActivity("A", 100, 100, 100);
-        model.getUpdateService().createActivity("B", 150, 110, 100);
-        addMouseListener(new MouseLeftDownController(this, actionManager, model));
+        addEventHandler(new SelectReady());
+        addEventHandler(new DragReady());
+
+        stateManager.setCurrentState(State.SELECT_READY);
+
+        model.createActivity("A", 100, 100, 100);
+        model.createActivity("B", 120, 120, 100);
+    }
+
+    private void addEventHandler(EventHandler eventHandler) {
+        stateManager.addEventHandler(eventHandler);
+        eventHandler.setStateManager(stateManager);
+        eventHandler.setModel(model);
+        eventHandler.setCanvas(this);
+        addMouseListener(eventHandler.getMousePressedListener());
+        addMouseListener(eventHandler.getMouseReleasedListener());
+        addMouseMotionListener(eventHandler.getMouseDraggedListener());
+        addMouseMotionListener(eventHandler.getMouseMovedListener());
     }
 
     @Override

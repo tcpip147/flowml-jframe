@@ -1,20 +1,23 @@
 package com.tcpip147.ui.component;
 
+import com.tcpip147.ui.MyColor;
 import lombok.Getter;
-import lombok.ToString;
+import lombok.Setter;
 
 import java.awt.*;
 import java.awt.event.MouseEvent;
 
 @Getter
-@ToString
+@Setter
 public class Activity extends Shape {
+
+    public static final int HEIGHT = 26;
 
     private String name;
     private int x;
     private int y;
     private int width;
-    private int height = 26;
+    private int height = HEIGHT;
 
     public Activity(String name, int x, int y, int width) {
         this.name = name;
@@ -24,11 +27,24 @@ public class Activity extends Shape {
     }
 
     @Override
+    public void setSelected(boolean selected) {
+        super.setSelected(selected);
+    }
+
+    @Override
     public void draw(Graphics2D g) {
-        g.setColor(Color.LIGHT_GRAY);
+        g.setColor(MyColor.ACTIVITY_OUTLINE);
         g.fillRect(x, y, width, height);
-        g.setColor(Color.BLACK);
+        g.setColor(MyColor.ACTIVITY_DEFAULT);
         g.fillRect(x + 1, y + 1, width - 2, height - 2);
+        if (isSelected()) {
+            g.setColor(MyColor.DOT_OUTLINE);
+            g.fillRect(x - 2, y + height / 2 - 3, 6, 6);
+            g.fillRect(x + width - 4, y + height / 2 - 3, 6, 6);
+            g.setColor(MyColor.DOT_DEFAULT);
+            g.fillRect(x - 1, y + height / 2 - 2, 4, 4);
+            g.fillRect(x + width - 3, y + height / 2 - 2, 4, 4);
+        }
     }
 
     @Override
