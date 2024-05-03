@@ -1,0 +1,12 @@
+package com.tcpip147.ui;
+
+public enum State {
+    SELECT_READY,
+    MOVE_READY,
+    MOVE_STARTED,
+    RESIZE_STARTED,
+    RANGE_MODE,
+    WIRE_MOVE_READY,
+    ADD_ACTIVITY_READY,
+    ADD_WIRE_READY, ADD_WIRE_TARGET_READY,
+}
