@@ -226,4 +226,42 @@ public class Model {
         }
         return null;
     }
+
+    public void linkWire(MouseContext c, MouseEvent e) {
+        Linkable linkable = c.linkable;
+        LinkingPort floater = getLinkPortOnTop(e);
+        LinkingPort anchor = c.linkPosition == 1 ? linkable.getTarget() : linkable.getSource();
+
+        if (floater != null && anchor != floater) {
+            floater.setVisibleLinkingMarks(true);
+            LinkingPortPoint point = floater.getLinkingPortPoint(e.getX(), e.getY());
+            linkable.setLinkingPoint(c, e, point);
+        } else {
+            for (Shape shape : shapeList) {
+                if (shape instanceof LinkingPort) {
+                    ((LinkingPort) shape).setVisibleLinkingMarks(false);
+                }
+            }
+            linkable.setLinkingPoint(c, e, null);
+        }
+    }
+
+
+    public LinkingPort getLinkPortOnTop(MouseEvent e) {
+        ListIterator<Shape> iterator = shapeList.listIterator(shapeList.size());
+        while (iterator.hasPrevious()) {
+            Shape shape = iterator.previous();
+            if (shape instanceof LinkingPort) {
+                LinkingPort linkingPort = (LinkingPort) shape;
+                if (linkingPort.isInBoundedLinkingPort(e.getX(), e.getY())) {
+                    return linkingPort;
+                }
+            }
+        }
+        return null;
+    }
+
+    public void adjustLinkingWire(MouseContext c) {
+        c.linkable.adjustLinkingResult();
+    }
 }

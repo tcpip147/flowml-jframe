@@ -44,7 +44,10 @@ public class Canvas extends JPanel {
                             resizable.resizeStart(c, e);
                             state = State.RESIZE_STARTED;
                         } else if (linkable != null) {
-                            System.out.println(linkable.getLinkingPosition(e.getX(), e.getY()));
+                            c.linkable = linkable;
+                            c.linkPosition = linkable.getLinkingPosition(e.getX(), e.getY());
+                            linkable.linkStart(c, e);
+                            state = State.LINK_STARTED;
                         } else {
                             Selectable selectable = model.getSelectableOnTop(e);
                             if (selectable == null) {
@@ -84,6 +87,9 @@ public class Canvas extends JPanel {
                 } else if (state == State.RESIZE_STARTED) {
                     model.resizeShape(c, e);
                     repaint();
+                } else if (state == State.LINK_STARTED) {
+                    model.linkWire(c, e);
+                    repaint();
                 }
             }
 
@@ -120,6 +126,10 @@ public class Canvas extends JPanel {
                     repaint();
                 } else if (state == State.RESIZE_STARTED) {
                     model.adjustResizeShape(c);
+                    state = State.SELECT_READY;
+                    repaint();
+                } else if (state == State.LINK_STARTED) {
+                    model.adjustLinkingWire(c);
                     state = State.SELECT_READY;
                     repaint();
                 }

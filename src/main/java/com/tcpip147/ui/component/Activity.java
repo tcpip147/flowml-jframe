@@ -11,7 +11,7 @@ import java.awt.event.MouseEvent;
 
 @Getter
 @Setter
-public class Activity extends Shape implements Selectable, Movable, Resizable {
+public class Activity extends Shape implements Selectable, Movable, Resizable, LinkingPort {
 
     private int id;
     private String name;
@@ -24,6 +24,7 @@ public class Activity extends Shape implements Selectable, Movable, Resizable {
     private boolean visibleResizingGhost;
     private int ghostX;
     private int ghostWidth;
+    private boolean visibleLinkingMarks;
 
     public Activity(int id, String name, int x, int y, int width) {
         this.id = id;
@@ -39,6 +40,7 @@ public class Activity extends Shape implements Selectable, Movable, Resizable {
         drawShape(g);
         drawResizingGhost(g);
         drawSelectionMark(g);
+        drawLinkingMarks(g);
     }
 
     private void drawMovingGhost(Graphics2D g) {
@@ -73,6 +75,21 @@ public class Activity extends Shape implements Selectable, Movable, Resizable {
             g.setColor(FmlColor.ACTIVITY_SELECTION_MARK);
             g.fillRect(x - 2, y + height / 2 - 2, 4, 4);
             g.fillRect(x + width - 2, y + height / 2 - 2, 4, 4);
+        }
+    }
+
+    private void drawLinkingMarks(Graphics2D g) {
+        if (visibleLinkingMarks) {
+            g.setColor(FmlColor.WIRE_SELECTION_MARK_OUTER);
+            g.fillRect(x - 3, y + height / 2 - 3, 6, 6);
+            g.fillRect(x + width - 3, y + height / 2 - 3, 6, 6);
+            g.fillRect(x + width / 2 - 3, y - 3, 6, 6);
+            g.fillRect(x + width / 2 - 3, y + height - 3, 6, 6);
+            g.setColor(FmlColor.WIRE_SELECTION_MARK);
+            g.fillRect(x - 2, y + height / 2 - 2, 4, 4);
+            g.fillRect(x + width - 2, y + height / 2 - 2, 4, 4);
+            g.fillRect(x + width / 2 - 2, y - 2, 4, 4);
+            g.fillRect(x + width / 2 - 2, y + height - 2, 4, 4);
         }
     }
 
@@ -190,4 +207,29 @@ public class Activity extends Shape implements Selectable, Movable, Resizable {
     public int getHeightOfResizingGhost() {
         return height;
     }
+
+    @Override
+    public void setVisibleLinkingMarks(boolean visible) {
+        this.visibleLinkingMarks = visible;
+    }
+
+    @Override
+    public boolean isInBoundedLinkingPort(int px, int py) {
+        return getLinkingPortPoint(px, py) != null;
+    }
+
+    @Override
+    public LinkingPortPoint getLinkingPortPoint(int px, int py) {
+        if (px > x + Canvas.GRID_SIZE / 2 && px < x + width - Canvas.GRID_SIZE / 2 && py > y - 10 && py < y + height / 2) {
+            return new LinkingPortPoint("N", (int) Math.round((px - x) / (double) Canvas.GRID_SIZE) * Canvas.GRID_SIZE);
+        } else if (px > x + Canvas.GRID_SIZE / 2 && px < x + width - Canvas.GRID_SIZE / 2 && py >= y + height / 2 && py < y + height + 10) {
+            return new LinkingPortPoint("S", (int) Math.round((px - x) / (double) Canvas.GRID_SIZE) * Canvas.GRID_SIZE);
+        } else if (px > x - 10 && px <= x + Canvas.GRID_SIZE / 2 && py > y && py < y + height) {
+            return new LinkingPortPoint("W", 0);
+        } else if (px >= x + width - Canvas.GRID_SIZE / 2 && px < x + width + 10 && py > y && py < y + height) {
+            return new LinkingPortPoint("E", 0);
+        }
+        return null;
+    }
+
 }

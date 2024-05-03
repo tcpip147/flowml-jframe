@@ -2,10 +2,12 @@ package com.tcpip147.ui.component;
 
 import com.tcpip147.path.PathFinder;
 import com.tcpip147.ui.FmlColor;
+import com.tcpip147.ui.event.MouseContext;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.awt.*;
+import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,6 +25,15 @@ public class Wire extends Shape implements Selectable, Linkable {
     private List<Point> points = new ArrayList<>();
 
     private boolean selected;
+    private boolean visibleDirectionMark = true;
+
+    private boolean visibleGhostWire;
+    private Activity ghostSource;
+    private String ghostSourceDir;
+    private int ghostSourceX;
+    private Activity ghostTarget;
+    private String ghostTargetDir;
+    private int ghostTargetX;
 
     public Wire(Activity source, String sourceDir, int sourceX, Activity target, String targetDir, int targetX) {
         this.source = source;
@@ -35,16 +46,23 @@ public class Wire extends Shape implements Selectable, Linkable {
     }
 
     public void refresh() {
-        if (source != null && target != null) {
-            Rectangle sourceRect = new Rectangle(source.getX(), source.getY(), source.getWidth(), source.getHeight());
-            Rectangle targetRect = new Rectangle(target.getX(), target.getY(), target.getWidth(), target.getHeight());
-            PathFinder pathFinder = new PathFinder(sourceRect, sourceDir, source.getX() + sourceX, targetRect, targetDir, target.getX() + targetX);
+        Activity start = visibleGhostWire ? ghostSource : source;
+        String startDir = visibleGhostWire ? ghostSourceDir : sourceDir;
+        int startX = visibleGhostWire ? ghostSourceX : sourceX;
+        Activity end = visibleGhostWire ? ghostTarget : target;
+        String endDir = visibleGhostWire ? ghostTargetDir : targetDir;
+        int endX = visibleGhostWire ? ghostTargetX : targetX;
+
+        if (start != null && end != null) {
+            Rectangle sourceRect = new Rectangle(start.getX(), start.getY(), start.getWidth(), start.getHeight());
+            Rectangle targetRect = new Rectangle(end.getX(), end.getY(), end.getWidth(), end.getHeight());
+            PathFinder pathFinder = new PathFinder(sourceRect, startDir, start.getX() + startX, targetRect, endDir, end.getX() + endX);
             points = pathFinder.find();
             if (points.size() > 1) {
                 digestPoints();
                 modifyLine();
-                setOutlinePoint(points.get(0), sourceDir, sourceX, source);
-                setOutlinePoint(points.get(points.size() - 1), targetDir, targetX, target);
+                setOutlinePoint(points.get(0), startDir, startX, start);
+                setOutlinePoint(points.get(points.size() - 1), endDir, endX, end);
             }
         }
     }
@@ -95,19 +113,13 @@ public class Wire extends Shape implements Selectable, Linkable {
     private boolean isHitX(Activity activity, Rectangle rect) {
         int min = activity.getX() < rect.x ? activity.getX() : rect.x;
         int max = activity.getX() + activity.getWidth() > rect.x + rect.width ? activity.getX() + activity.getWidth() : rect.x + rect.width;
-        if (max - min - activity.getWidth() - rect.width <= 0) {
-            return true;
-        }
-        return false;
+        return max - min - activity.getWidth() - rect.width <= 0;
     }
 
     private boolean isHitY(Activity activity, Rectangle rect) {
         int min = activity.getY() < rect.y ? activity.getY() : rect.y;
         int max = activity.getY() + activity.getHeight() > rect.y + rect.height ? activity.getY() + activity.getHeight() : rect.y + rect.height;
-        if (max - min - activity.getHeight() - rect.height <= 0) {
-            return true;
-        }
-        return false;
+        return max - min - activity.getHeight() - rect.height <= 0;
     }
 
     protected void setOutlinePoint(Point point, String direction, int offset, Activity activity) {
@@ -143,14 +155,16 @@ public class Wire extends Shape implements Selectable, Linkable {
             }
             g.drawLine(current.x, current.y, prev.x, prev.y);
             if (i == points.size() - 1) {
-                if ("N".equals(targetDir)) {
-                    g.fillPolygon(new int[]{current.x - 5, current.x, current.x + 5}, new int[]{current.y - 7, current.y, current.y - 7}, 3);
-                } else if ("E".equals(targetDir)) {
-                    g.fillPolygon(new int[]{current.x + 7, current.x, current.x + 7}, new int[]{current.y - 5, current.y, current.y + 5}, 3);
-                } else if ("S".equals(targetDir)) {
-                    g.fillPolygon(new int[]{current.x - 5, current.x, current.x + 5}, new int[]{current.y + 7, current.y, current.y + 7}, 3);
-                } else {
-                    g.fillPolygon(new int[]{current.x - 7, current.x, current.x - 7}, new int[]{current.y - 5, current.y, current.y + 5}, 3);
+                if (visibleDirectionMark) {
+                    if ("N".equals(targetDir)) {
+                        g.fillPolygon(new int[]{current.x - 5, current.x, current.x + 5}, new int[]{current.y - 7, current.y, current.y - 7}, 3);
+                    } else if ("E".equals(targetDir)) {
+                        g.fillPolygon(new int[]{current.x + 7, current.x, current.x + 7}, new int[]{current.y - 5, current.y, current.y + 5}, 3);
+                    } else if ("S".equals(targetDir)) {
+                        g.fillPolygon(new int[]{current.x - 5, current.x, current.x + 5}, new int[]{current.y + 7, current.y, current.y + 7}, 3);
+                    } else {
+                        g.fillPolygon(new int[]{current.x - 7, current.x, current.x - 7}, new int[]{current.y - 5, current.y, current.y + 5}, 3);
+                    }
                 }
             }
         }
@@ -253,4 +267,58 @@ public class Wire extends Shape implements Selectable, Linkable {
         }
         return 0;
     }
+
+    @Override
+    public void linkStart(MouseContext c, MouseEvent e) {
+        visibleGhostWire = true;
+        ghostSource = source;
+        ghostSourceDir = sourceDir;
+        ghostSourceX = sourceX;
+        ghostTarget = target;
+        ghostTargetDir = targetDir;
+        ghostTargetX = targetX;
+    }
+
+    @Override
+    public void adjustLinkingResult() {
+        visibleGhostWire = false;
+        source = ghostSource;
+        sourceDir = ghostSourceDir;
+        sourceX = ghostSourceX;
+        target = ghostTarget;
+        targetDir = ghostTargetDir;
+        targetX = ghostTargetX;
+    }
+
+    @Override
+    public void setLinkingPoint(MouseContext c, MouseEvent e, LinkingPortPoint point) {
+        if (point != null) {
+            if (c.linkPosition == 1) {
+                ghostSourceDir = point.getDir();
+                ghostSourceX = point.getX();
+            } else {
+                ghostTargetDir = point.getDir();
+                ghostTargetX = point.getX();
+            }
+            visibleDirectionMark = true;
+            refresh();
+        } else {
+            points.clear();
+            if (c.linkPosition == 1) {
+                points.add(new Point(e.getX(), e.getY()));
+                points.add(getWirePoint(ghostTarget, ghostTargetDir, ghostTargetX));
+            } else {
+                points.add(getWirePoint(ghostSource, ghostSourceDir, ghostSourceX));
+                points.add(new Point(e.getX(), e.getY()));
+            }
+            visibleDirectionMark = false;
+        }
+    }
+
+    private Point getWirePoint(Activity activity, String direction, int offsetX) {
+        int outX = "W".equals(direction) ? activity.getX() : "E".equals(direction) ? activity.getX() + activity.getWidth() : activity.getX() + offsetX;
+        int outY = "N".equals(direction) ? activity.getY() : "S".equals(direction) ? activity.getY() + activity.getHeight() : activity.getY() + activity.getHeight() / 2;
+        return new Point(outX, outY);
+    }
+
 }
